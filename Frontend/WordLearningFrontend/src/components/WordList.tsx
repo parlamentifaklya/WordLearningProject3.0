@@ -3,6 +3,7 @@ import { fetchWords } from '../apiService';
 import { Word } from '../wordInterface'; 
 
 const WordList: React.FC = () => {
+    
     const [words, setWords] = useState<Word[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -33,11 +34,14 @@ const WordList: React.FC = () => {
     if (error) return <div>Error: {error}</div>;
 
     return (
-        <ol>
-            {words.map(word => (
-                <li key={word.id}>{word.eng} - {word.hun}</li>
-            ))}
-        </ol>
+        <div className='container'>
+            <div className='question'></div>
+            <div className='answer-container'>
+                <div className='answer'></div>
+                <div className='answer'></div>
+                <div className='answer'></div>
+            </div>
+        </div>
     );
 };
 
