@@ -12,11 +12,11 @@ const WordList: React.FC = () => {
     const [answers, setAnswers] = useState<Word[]>([]);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
     const [feedback, setFeedback] = useState<string | null>(null);
-    const [difficulty, setDifficulty] = useState<string>('easy'); // Default difficulty
+    const [difficulty, setDifficulty] = useState<string>('easy');
     const [timeLeft, setTimeLeft] = useState<number>(0);
     const [isTimeUp, setIsTimeUp] = useState<boolean>(false);
-    const questionRef = useRef<HTMLDivElement | null>(null); // Ref for question card
-    const answerRefs = useRef<(HTMLDivElement | null)[]>([]); // Ref for answer cards
+    const questionRef = useRef<HTMLDivElement | null>(null);
+    const answerRefs = useRef<(HTMLDivElement | null)[]>([]);
 
     useEffect(() => {
         const getWords = async () => {
@@ -77,9 +77,8 @@ const WordList: React.FC = () => {
         setAnswers(finalAnswers);
         setSelectedAnswerIndex(null);
         setFeedback(null);
-        setIsTimeUp(false); // Reset time up state
+        setIsTimeUp(false);
 
-        // Set timer based on difficulty
         switch (difficulty) {
             case 'medium':
                 setTimeLeft(30);
@@ -88,15 +87,13 @@ const WordList: React.FC = () => {
                 setTimeLeft(10);
                 break;
             default:
-                setTimeLeft(0); // Unlimited time for easy
+                setTimeLeft(0);
         }
 
-        // Animate the question card on load
         if (questionRef.current) {
             gsap.fromTo(questionRef.current, { rotationY: 180 }, { rotationY: 0, duration: 0.5 });
         }
 
-        // Animate the answer cards on load
         setTimeout(() => {
             answerRefs.current.forEach((card, index) => {
                 if (card) {
@@ -107,14 +104,12 @@ const WordList: React.FC = () => {
     };
 
     const handleAnswerSelection = (isCorrect: boolean, index: number) => {
-        // Prevent selection if time is up
         if (isTimeUp) {
             alert("Time's up! You cannot answer.");
             return;
         }
 
-        // Prevent animation on click
-        if (selectedAnswerIndex !== null) return; // If an answer is already selected, do nothing
+        if (selectedAnswerIndex !== null) return;
 
         setSelectedAnswerIndex(index);
         if (isCorrect && selectedQuestion) {
@@ -130,22 +125,21 @@ const WordList: React.FC = () => {
             setFeedback("Wrong answer. Try again!");
         }
 
-        // Animate the selected card after a delay
         setTimeout(() => {
             if (answerRefs.current[index]) {
                 gsap.to(answerRefs.current[index], { rotationY: 180, duration: 0.5 });
             }
-        }, 100); // Delay to allow feedback to be visible
+        }, 100);
 
         setTimeout(() => {
             selectRandomElements();
-        }, 1000); // Delay before selecting a new word
+        }, 1000);
     };
 
     const handleDifficultyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         setDifficulty(event.target.value);
-        setIsTimeUp(false); // Reset time up state
-        selectRandomElements(); // Select a new question when difficulty changes
+        setIsTimeUp(false);
+        selectRandomElements();
     };
 
     if (loading) return <div>Loading...</div>;
@@ -170,7 +164,7 @@ const WordList: React.FC = () => {
                             {answers.map((answer, index) => (
                                 <div 
                                     key={index} 
-                                    ref={(ref) => { answerRefs.current[index] = ref; }}  // Assign ref to answer cards
+                                    ref={(ref) => { answerRefs.current[index] = ref; }}
                                     className={`answer ${selectedAnswerIndex === index ? (answer.eng === selectedQuestion.eng ? 'correct-answer' : 'wrong-answer') : ''}`} 
                                     onClick={() => handleAnswerSelection(answer.eng === selectedQuestion.eng, index)}
                                 >
@@ -182,7 +176,7 @@ const WordList: React.FC = () => {
                         {difficulty !== 'easy' && <p>Time Left: {timeLeft} seconds</p>}
                     </div>
                 )}
-                <button type="button" onClick={selectRandomElements}>Új Szó</button>
+                <button type="button" onClick={selectRandomElements}>New Question</button>
             </div>
         </div>
     );
