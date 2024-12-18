@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { fetchWords } from '../apiService'; 
-import { Word } from '../wordInterface'; 
+import { Word } from '../wordInterface';
+import '../WordList.css';
 
 const WordList: React.FC = () => {
     const [words, setWords] = useState<Word[]>([]);
@@ -67,19 +68,26 @@ const WordList: React.FC = () => {
     if (error) return <div>Error: {error}</div>;
 
     return (
-        <div className='container'>
-            {selectedQuestion && (
-                <div className='question'>
-                    {selectedQuestion.eng}
-                    <div className='answer-container'>
-                        {answers.map((answer, index) => (
-                            <div key={index} className='answer'>
-                                {answer.hun}
-                            </div>
-                        ))}
+        <div>
+            <h1 className='title'>Word Quiz</h1> {/* Title above the container */}
+            <div className='container'>
+                {selectedQuestion && (
+                    <div className='content'>
+                        <div className='question'>
+                            {selectedQuestion.eng}
+                        </div>
+                        <div className='arrow'>→</div> {/* Arrow between question and answers */}
+                        <div className='answer-container'>
+                            {answers.map((answer, index) => (
+                                <div key={index} className='answer'>
+                                    {answer.hun}
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                </div>
-            )}
+                )}
+                <button type="button" onClick={selectRandomElements}>Új Szó</button>
+            </div>
         </div>
     );
 };
