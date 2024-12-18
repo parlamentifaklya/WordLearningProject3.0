@@ -12,6 +12,9 @@ const WordList: React.FC = () => {
     const [answers, setAnswers] = useState<Word[]>([]);
     const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
     const [feedback, setFeedback] = useState<string | null>(null);
+    const [difficulty, setDifficulty] = useState<string>('easy'); // Default difficulty
+    const [timeLeft, setTimeLeft] = useState<number>(0);
+    const [isTimeUp, setIsTimeUp] = useState<boolean>(false);
     const questionRef = useRef<HTMLDivElement | null>(null); // Ref for question card
     const answerRefs = useRef<(HTMLDivElement | null)[]>([]); // Ref for answer cards
 
@@ -40,6 +43,18 @@ const WordList: React.FC = () => {
         getWords();
     }, []); 
 
+    useEffect(() => {
+        if (timeLeft > 0) {
+            const timerId = setInterval(() => {
+                setTimeLeft(prevTime => prevTime - 1);
+            }, 1000);
+            return () => clearInterval(timerId);
+        } else if (timeLeft === 0 && difficulty !== 'easy') {
+            setIsTimeUp(true);
+            setFeedback("Time's up! Please select a new question.");
+        }
+    }, [timeLeft, difficulty]);
+
     const selectRandomElements = () => {
         const availableWords = words.filter(word => word.successCounter < 3);
         if (availableWords.length === 0) return;
@@ -62,6 +77,19 @@ const WordList: React.FC = () => {
         setAnswers(finalAnswers);
         setSelectedAnswerIndex(null);
         setFeedback(null);
+        setIsTimeUp(false); // Reset time up state
+
+        // Set timer based on difficulty
+        switch (difficulty) {
+            case 'medium':
+                setTimeLeft(30);
+                break;
+            case 'hard':
+                setTimeLeft(10);
+                break;
+            default:
+                setTimeLeft(0); // Unlimited time for easy
+        }
 
         // Animate the question card on load
         if (questionRef.current) {
@@ -79,6 +107,12 @@ const WordList: React.FC = () => {
     };
 
     const handleAnswerSelection = (isCorrect: boolean, index: number) => {
+        // Prevent selection if time is up
+        if (isTimeUp) {
+            alert("Time's up! You cannot answer.");
+            return;
+        }
+
         // Prevent animation on click
         if (selectedAnswerIndex !== null) return; // If an answer is already selected, do nothing
 
@@ -108,12 +142,23 @@ const WordList: React.FC = () => {
         }, 1000); // Delay before selecting a new word
     };
 
+    const handleDifficultyChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        setDifficulty(event.target.value);
+        setIsTimeUp(false); // Reset time up state
+        selectRandomElements(); // Select a new question when difficulty changes
+    };
+
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
 
     return (
         <div>
             <h1 className='title'>Word Quiz</h1>
+            <select onChange={handleDifficultyChange} value={difficulty}>
+                <option value="easy">Easy (Unlimited Time)</option>
+                <option value="medium">Medium (30 seconds)</option>
+                <option value="hard">Hard (10 seconds)</option>
+            </select>
             <div className='container'>
                 {selectedQuestion && (
                     <div className='content'>
@@ -134,6 +179,7 @@ const WordList: React.FC = () => {
                             ))}
                         </div>
                         {feedback && <div className='feedback'>{feedback}</div>}
+                        {difficulty !== 'easy' && <p>Time Left: {timeLeft} seconds</p>}
                     </div>
                 )}
                 <button type="button" onClick={selectRandomElements}>Új Szó</button>
