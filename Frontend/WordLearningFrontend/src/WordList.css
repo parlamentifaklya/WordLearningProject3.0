@@ -101,3 +101,19 @@ button {
 button:hover {
     background-color: #0056b3;
 }
+
+.answer.correct-answer {
+    border: 1px solid green; /* Border for correct answer */
+    background-color: #d4edda; /* Light green background */
+}
+
+.answer.wrong-answer {
+    border: 1px solid red; /* Border for wrong answer */
+    background-color: #f8d7da; /* Light red background */
+}
+
+.feedback {
+    margin-top: 10px;
+    font-weight: bold;
+    color: #800080; /* Purple color for feedback */
+}

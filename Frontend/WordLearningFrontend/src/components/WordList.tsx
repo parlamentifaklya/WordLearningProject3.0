@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { fetchWords } from '../apiService'; 
 import { Word } from '../wordInterface';
+import { gsap } from 'gsap';
 import '../WordList.css';
 
 const WordList: React.FC = () => {
@@ -9,6 +10,10 @@ const WordList: React.FC = () => {
     const [error, setError] = useState<string | null>(null);
     const [selectedQuestion, setSelectedQuestion] = useState<Word | null>(null);
     const [answers, setAnswers] = useState<Word[]>([]);
+    const [selectedAnswerIndex, setSelectedAnswerIndex] = useState<number | null>(null);
+    const [feedback, setFeedback] = useState<string | null>(null);
+    const questionRef = useRef<HTMLDivElement | null>(null); // Ref for question card
+    const answerRefs = useRef<(HTMLDivElement | null)[]>([]); // Ref for answer cards
 
     useEffect(() => {
         const getWords = async () => {
@@ -16,9 +21,12 @@ const WordList: React.FC = () => {
             setError(null);
             try {
                 const data = await fetchWords();
-                console.log(data);
                 if (Array.isArray(data)) { 
-                    setWords(data);
+                    const initializedWords = data.map(word => ({
+                        ...word,
+                        successCounter: word.successCounter || 0 
+                    }));
+                    setWords(initializedWords);
                 } else {
                     throw new Error('Fetched data is not an array');
                 }
@@ -33,57 +41,99 @@ const WordList: React.FC = () => {
     }, []); 
 
     const selectRandomElements = () => {
-        if (words.length === 0) return;
+        const availableWords = words.filter(word => word.successCounter < 3);
+        if (availableWords.length === 0) return;
 
-        const randomIndex = Math.floor(Math.random() * words.length);
-        const questionWord = words[randomIndex];
-
+        const randomIndex = Math.floor(Math.random() * availableWords.length);
+        const questionWord = availableWords[randomIndex];
         const correctAnswer = questionWord;
-
-        const remainingElements = words.filter((item) => item !== questionWord);
+        const remainingElements = availableWords.filter((item) => item !== questionWord);
 
         const randomIndices = new Set<number>();
-        while (randomIndices.size < 2) {
+        while (randomIndices.size < 2 && remainingElements.length > 0) {
             const index = Math.floor(Math.random() * remainingElements.length);
             randomIndices.add(index);
         }
 
         const selectedDistinctAnswers = Array.from(randomIndices).map(index => remainingElements[index]);
-
-        const finalAnswers = [correctAnswer, ...selectedDistinctAnswers];
-
-        const shuffledAnswers = finalAnswers.sort(() => Math.random() - 0.5);
+        const finalAnswers = [correctAnswer, ...selectedDistinctAnswers].sort(() => Math.random() - 0.5);
 
         setSelectedQuestion(questionWord);
-        setAnswers(shuffledAnswers);
+        setAnswers(finalAnswers);
+        setSelectedAnswerIndex(null);
+        setFeedback(null);
+
+        // Animate the question card on load
+        if (questionRef.current) {
+            gsap.fromTo(questionRef.current, { rotationY: 180 }, { rotationY: 0, duration: 0.5 });
+        }
+
+        // Animate the answer cards on load
+        setTimeout(() => {
+            answerRefs.current.forEach((card, index) => {
+                if (card) {
+                    gsap.fromTo(card, { rotationY: 180 }, { rotationY: 0, duration: 0.5, delay: index * 0.1 });
+                }
+            });
+        }, 100);
     };
 
-    useEffect(() => {
-        if (words.length > 0) {
-            selectRandomElements();
+    const handleAnswerSelection = (isCorrect: boolean, index: number) => {
+        // Prevent animation on click
+        if (selectedAnswerIndex !== null) return; // If an answer is already selected, do nothing
+
+        setSelectedAnswerIndex(index);
+        if (isCorrect && selectedQuestion) {
+            const updatedWords = words.map(word => {
+                if (word.eng === selectedQuestion.eng) {
+                    return { ...word, successCounter: word.successCounter + 1 };
+                }
+                return word;
+            });
+            setWords(updatedWords);
+            setFeedback("Correct!");
+        } else {
+            setFeedback("Wrong answer. Try again!");
         }
-    }, [words]);
+
+        // Animate the selected card after a delay
+        setTimeout(() => {
+            if (answerRefs.current[index]) {
+                gsap.to(answerRefs.current[index], { rotationY: 180, duration: 0.5 });
+            }
+        }, 100); // Delay to allow feedback to be visible
+
+        setTimeout(() => {
+            selectRandomElements();
+        }, 1000); // Delay before selecting a new word
+    };
 
     if (loading) return <div>Loading...</div>;
     if (error) return <div>Error: {error}</div>;
 
     return (
         <div>
-            <h1 className='title'>Word Quiz</h1> {/* Title above the container */}
+            <h1 className='title'>Word Quiz</h1>
             <div className='container'>
                 {selectedQuestion && (
                     <div className='content'>
-                        <div className='question'>
+                        <div className='question' ref={questionRef}>
                             {selectedQuestion.eng}
                         </div>
-                        <div className='arrow'>→</div> {/* Arrow between question and answers */}
+                        <div className='arrow'>→</div>
                         <div className='answer-container'>
                             {answers.map((answer, index) => (
-                                <div key={index} className='answer'>
+                                <div 
+                                    key={index} 
+                                    ref={(ref) => { answerRefs.current[index] = ref; }}  // Assign ref to answer cards
+                                    className={`answer ${selectedAnswerIndex === index ? (answer.eng === selectedQuestion.eng ? 'correct-answer' : 'wrong-answer') : ''}`} 
+                                    onClick={() => handleAnswerSelection(answer.eng === selectedQuestion.eng, index)}
+                                >
                                     {answer.hun}
                                 </div>
                             ))}
                         </div>
+                        {feedback && <div className='feedback'>{feedback}</div>}
                     </div>
                 )}
                 <button type="button" onClick={selectRandomElements}>Új Szó</button>
